@@ -37,12 +37,12 @@ func save(root string) http.HandlerFunc {
 		file := path.Join(root, util.PathWithoutExt(r.Form.Get("file"))+".md")
 
 		err := os.WriteFile(file, []byte(content), 0644)
-		if err != nil {
-			w.WriteHeader(500)
-			fmt.Fprintf(w, "failed to save page: %v", err)
+		if checkError(w, err) {
 			return
 		}
-		if updatePages(w, root) {
+
+		err = updatePages(root)
+		if checkError(w, err) {
 			return
 		}
 
@@ -56,13 +56,12 @@ func delete(root string) http.HandlerFunc {
 		file := path.Join(root, util.PathWithoutExt(r.Form.Get("file"))+".md")
 
 		err := os.Remove(file)
-		if err != nil {
-			w.WriteHeader(500)
-			fmt.Fprintf(w, "failed to delete page: %v", err)
+		if checkError(w, err) {
 			return
 		}
 
-		if updatePages(w, root) {
+		err = updatePages(root)
+		if checkError(w, err) {
 			return
 		}
 
@@ -70,20 +69,26 @@ func delete(root string) http.HandlerFunc {
 	}
 }
 
-func updatePages(w http.ResponseWriter, root string) bool {
+func updatePages(root string) error {
 	b, err := build.New(root)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "failed to initialize builder: %v", err)
-		return true
+		return fmt.Errorf("failed to initialize builder: %w", err)
 	}
 
 	err = b.Build()
 	// err = b.BuildFiles([]string{file})
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Fprintf(w, "failed to build page: %v", err)
-		return true
+		return fmt.Errorf("failed to build page: %w", err)
 	}
-	return false
+	return nil
+}
+
+func checkError(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
+	}
+	w.WriteHeader(500)
+	w.Write([]byte(err.Error()))
+
+	return true
 }

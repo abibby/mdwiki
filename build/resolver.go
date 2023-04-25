@@ -69,8 +69,8 @@ func (r *Resolver) ResolveWikilink(node *wikilink.Node) ([]byte, error) {
 	r.addLink(util.PathWithoutExt(r.currentPage), string(target))
 
 	if !exists {
-		return []byte(path.Join("edit", target+".html#create")), nil
+		return []byte(path.Join("/edit", target+".html")), nil
 	}
 
-	return []byte(target + ".html"), nil
+	return []byte("/" + target + ".html"), nil
 }

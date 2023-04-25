@@ -1,8 +1,14 @@
 :root {
     --light: 200, 200, 200;
+
+    font-family: sans-serif;
 }
 
-a[href$="#create"] {
+body {
+    margin: 10px;
+}
+
+.content a[href^="/edit"] {
     color: red;
 }
 h2 {
@@ -18,4 +24,15 @@ h2 {
 }
 .edit .message {
     height: 4em;
+}
+
+.btn-edit {
+    float: right;
+}
+
+@media screen and (min-width: 1020px) {    
+    body {
+        max-width: 1000px;
+        margin: 10px auto;
+    }
 }

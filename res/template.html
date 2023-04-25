@@ -11,16 +11,18 @@
 <body>
     <nav>
         <a href="/">Home</a>
-        <form action="search.html">
+        <!-- <form action="search.html">
             <input type="text" name="q">
-        </form>
+        </form> -->
     </nav>
 
     {{ if .ContentPage }}
-        <a href="/edit/{{ .File }}">Edit</a>
+        <a class="btn-edit" href="/edit/{{ .File }}">Edit</a>
     {{ else }}
-        <a href="/{{ .File }}">Back</a>
+        <a class="btn-edit" href="/{{ .File }}">Back</a>
     {{ end }}
-    {{ .Body }}
+    <section class="content">
+        {{ .Body }}
+    </section>
 </body>
 </html>
