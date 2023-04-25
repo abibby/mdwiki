@@ -69,7 +69,7 @@ func (b *Builder) Build() error {
 
 	err = b.BuildFiles(inFiles)
 	if err != nil {
-		return fmt.Errorf("could not copy static files %w", err)
+		return fmt.Errorf("could not build files: %w", err)
 	}
 
 	// err = b.updateLinks()

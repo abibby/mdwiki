@@ -15,7 +15,7 @@ func (b *Builder) copyStaticFiles() error {
 	for assetPath, data := range files {
 		err := os.WriteFile(path.Join(b.root, assetPath), data, 0644)
 		if err != nil {
-			return fmt.Errorf("could not copy css %w", err)
+			return fmt.Errorf("could not copy %s: %w", assetPath, err)
 		}
 	}
 	return nil
