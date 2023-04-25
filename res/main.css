@@ -1,0 +1,10 @@
+:root {
+    --light: 200, 200, 200;
+}
+
+a[href$="#create"] {
+    color: red;
+}
+h2 {
+    border-bottom: solid 1px rgb(var(--light));
+}
