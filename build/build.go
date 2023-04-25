@@ -17,6 +17,7 @@ type Builder struct {
 	root     string
 	md       goldmark.Markdown
 	template *template.Template
+	resolver *Resolver
 }
 
 func New(root string) (*Builder, error) {
@@ -24,14 +25,16 @@ func New(root string) (*Builder, error) {
 	if err != nil {
 		return nil, err
 	}
+	r := NewResolver(root)
 	return &Builder{
 		root: root,
 		md: goldmark.New(
 			goldmark.WithExtensions(extension.GFM, &wikilink.Extender{
-				Resolver: NewResolver(root),
+				Resolver: r,
 			}),
 		),
 		template: t,
+		resolver: r,
 	}, nil
 }
 
@@ -39,6 +42,11 @@ func (b *Builder) Build() error {
 	files, err := os.ReadDir(b.root)
 	if err != nil {
 		return fmt.Errorf("could not read directory: %w", err)
+	}
+
+	err = os.MkdirAll(path.Join(b.root, "dist/edit"), 0755)
+	if err != nil {
+		return fmt.Errorf("could not create destination folder %w", err)
 	}
 
 	err = b.copyStaticFiles()
@@ -54,17 +62,18 @@ func (b *Builder) Build() error {
 		inFiles = append(inFiles, path.Join(b.root, f.Name()))
 	}
 
-	return b.BuildFiles(inFiles)
+	err = b.BuildFiles(inFiles)
+	if err != nil {
+		return fmt.Errorf("could not copy static files %w", err)
+	}
+
+	return nil
 }
 
 func (b *Builder) BuildFiles(inFiles []string) error {
 	_, err := b.template.ParseFiles(inFiles...)
 	if err != nil {
 		return fmt.Errorf("failed to parse markdown: %w", err)
-	}
-	err = os.MkdirAll(path.Join(b.root, "dist/edit"), 0755)
-	if err != nil {
-		return fmt.Errorf("could not create destination folder %w", err)
 	}
 
 	for _, name := range inFiles {
@@ -73,42 +82,66 @@ func (b *Builder) BuildFiles(inFiles []string) error {
 			srcFile,
 			path.Join(b.root, "dist", util.PathWithoutExt(srcFile)+".html"),
 			path.Join(b.root, "dist/edit", util.PathWithoutExt(srcFile)+".html"),
+			false,
 		)
 		if err != nil {
 			return fmt.Errorf("counld not build file %s: %w", name, err)
 		}
 	}
 
+	editPages := []string{}
+	for page, exists := range b.resolver.pages {
+		if exists {
+			continue
+		}
+		editPages = append(editPages, page+".md")
+	}
+
+	for _, srcFile := range editPages {
+		err = b.buildFile(
+			srcFile,
+			path.Join(b.root, "dist", util.PathWithoutExt(srcFile)+".html"),
+			path.Join(b.root, "dist/edit", util.PathWithoutExt(srcFile)+".html"),
+			true,
+		)
+		if err != nil {
+			return fmt.Errorf("counld not build file %s: %w", srcFile, err)
+		}
+	}
+
 	return nil
 }
-func (b *Builder) buildFile(in, out, edit string) error {
-	srcBuff := &bytes.Buffer{}
-	destBuff := &bytes.Buffer{}
+func (b *Builder) buildFile(in, out, edit string, onlyEdit bool) error {
+	rawMD := []byte{}
+	if !onlyEdit {
+		srcBuff := &bytes.Buffer{}
+		destBuff := &bytes.Buffer{}
 
-	err := b.template.ExecuteTemplate(srcBuff, in, nil)
-	if err != nil {
-		return fmt.Errorf("failed to execute src template: %w", err)
-	}
+		err := b.template.ExecuteTemplate(srcBuff, in, nil)
+		if err != nil {
+			return fmt.Errorf("failed to execute src template: %w", err)
+		}
 
-	err = b.md.Convert(srcBuff.Bytes(), destBuff)
-	if err != nil {
-		return fmt.Errorf("failed convert markdown: %w", err)
-	}
+		err = b.md.Convert(srcBuff.Bytes(), destBuff)
+		if err != nil {
+			return fmt.Errorf("failed convert markdown: %w", err)
+		}
+		err = b.writeTemplateToFile(out, "default", &DefaultTemplateData{
+			Title:       in,
+			Body:        template.HTML(destBuff.String()),
+			ContentPage: true,
+			File:        util.PathWithoutExt(in) + ".html",
+		})
+		if err != nil {
+			return fmt.Errorf("default: %w", err)
+		}
 
-	err = b.writeTemplateToFile(out, "default", &DefaultTemplateData{
-		Title:       in,
-		Body:        template.HTML(destBuff.String()),
-		ContentPage: true,
-		File:        util.PathWithoutExt(in) + ".html",
-	})
-	if err != nil {
-		return fmt.Errorf("default: %w", err)
+		rawMD, err = os.ReadFile(path.Join(b.root, in))
+		if err != nil {
+			return fmt.Errorf("failed to read markdown for editing: %w", err)
+		}
 	}
-	rawMD, err := os.ReadFile(path.Join(b.root, in))
-	if err != nil {
-		return fmt.Errorf("failed to read markdown for editing: %w", err)
-	}
-	err = b.writeTemplateToFile(edit, "edit", &EditTemplateData{
+	err := b.writeTemplateToFile(edit, "edit", &EditTemplateData{
 		Title:   in,
 		Content: string(rawMD),
 		File:    util.PathWithoutExt(in) + ".html",

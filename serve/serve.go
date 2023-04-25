@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/abibby/fileserver"
 	"github.com/abibby/mdwiki/build"
 	"github.com/abibby/mdwiki/util"
 )
@@ -23,13 +22,39 @@ func Serve(root string, port int) error {
 
 	s := http.NewServeMux()
 
-	s.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
+	s.Handle("/save", save(root))
+
+	s.Handle("/", http.FileServer(http.Dir(path.Join(root, "dist"))))
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
+}
+
+func save(root string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		content := r.Form.Get("content")
-		file := path.Join(root, util.PathWithoutExt(r.Form.Get("file"))+"md")
+		file := path.Join(root, util.PathWithoutExt(r.Form.Get("file"))+".md")
 
-		os.WriteFile("")
-	})
-	s.Handle("/", fileserver.WithFallback(os.DirFS(root), "dist", "index.html", nil))
-	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
+		err := os.WriteFile(file, []byte(content), 0644)
+		if err != nil {
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "failed to save page: %v", err)
+			return
+		}
+
+		b, err := build.New(root)
+		if err != nil {
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "failed to initialize builder: %v", err)
+		}
+
+		err = b.BuildFiles([]string{file})
+		if err != nil {
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "failed to build page: %v", err)
+			return
+		}
+
+		http.Redirect(w, r, "/"+r.Form.Get("file"), http.StatusFound)
+	}
 }

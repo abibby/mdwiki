@@ -44,10 +44,9 @@ func (r *Resolver) ResolveWikilink(node *wikilink.Node) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fragment := ""
 	if !exists {
-		fragment = "#create"
+		return []byte(path.Join("edit", target+".html#create")), nil
 	}
 
-	return []byte(target + ".html" + fragment), nil
+	return []byte(target + ".html"), nil
 }
