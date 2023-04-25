@@ -39,14 +39,19 @@ func New(root string) (*Builder, error) {
 }
 
 func (b *Builder) Build() error {
+	err := os.RemoveAll(path.Join(b.root, "dist"))
+	if err != nil {
+		return fmt.Errorf("could not clear dist: %w", err)
+	}
+
 	files, err := os.ReadDir(b.root)
 	if err != nil {
 		return fmt.Errorf("could not read directory: %w", err)
 	}
 
-	err = os.MkdirAll(path.Join(b.root, "dist/edit"), 0755)
+	err = b.mkdirs("dist/edit")
 	if err != nil {
-		return fmt.Errorf("could not create destination folder %w", err)
+		return err
 	}
 
 	err = b.copyStaticFiles()
@@ -67,6 +72,21 @@ func (b *Builder) Build() error {
 		return fmt.Errorf("could not copy static files %w", err)
 	}
 
+	// err = b.updateLinks()
+	// if err != nil {
+	// 	return fmt.Errorf("counld not update link cache: %w", err)
+	// }
+
+	return nil
+}
+
+func (b *Builder) mkdirs(paths ...string) error {
+	for _, p := range paths {
+		err := os.MkdirAll(path.Join(b.root, p), 0755)
+		if err != nil {
+			return fmt.Errorf("could not create folder %s: %w", p, err)
+		}
+	}
 	return nil
 }
 
@@ -112,6 +132,8 @@ func (b *Builder) BuildFiles(inFiles []string) error {
 	return nil
 }
 func (b *Builder) buildFile(in, out, edit string, onlyEdit bool) error {
+	b.resolver.SetCurrentPage(in)
+
 	rawMD := []byte{}
 	if !onlyEdit {
 		srcBuff := &bytes.Buffer{}

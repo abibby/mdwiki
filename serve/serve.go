@@ -23,6 +23,7 @@ func Serve(root string, port int) error {
 	s := http.NewServeMux()
 
 	s.Handle("/save", save(root))
+	s.Handle("/delete", delete(root))
 
 	s.Handle("/", http.FileServer(http.Dir(path.Join(root, "dist"))))
 
@@ -41,20 +42,48 @@ func save(root string) http.HandlerFunc {
 			fmt.Fprintf(w, "failed to save page: %v", err)
 			return
 		}
-
-		b, err := build.New(root)
-		if err != nil {
-			w.WriteHeader(500)
-			fmt.Fprintf(w, "failed to initialize builder: %v", err)
-		}
-
-		err = b.BuildFiles([]string{file})
-		if err != nil {
-			w.WriteHeader(500)
-			fmt.Fprintf(w, "failed to build page: %v", err)
+		if updatePages(w, root) {
 			return
 		}
 
 		http.Redirect(w, r, "/"+r.Form.Get("file"), http.StatusFound)
 	}
+}
+
+func delete(root string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		r.ParseForm()
+		file := path.Join(root, util.PathWithoutExt(r.Form.Get("file"))+".md")
+
+		err := os.Remove(file)
+		if err != nil {
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "failed to delete page: %v", err)
+			return
+		}
+
+		if updatePages(w, root) {
+			return
+		}
+
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+}
+
+func updatePages(w http.ResponseWriter, root string) bool {
+	b, err := build.New(root)
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "failed to initialize builder: %v", err)
+		return true
+	}
+
+	err = b.Build()
+	// err = b.BuildFiles([]string{file})
+	if err != nil {
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "failed to build page: %v", err)
+		return true
+	}
+	return false
 }

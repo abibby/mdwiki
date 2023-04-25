@@ -8,3 +8,14 @@ a[href$="#create"] {
 h2 {
     border-bottom: solid 1px rgb(var(--light));
 }
+.edit .content,
+.edit .message {
+    width: 100%;
+    resize: vertical;
+}
+.edit .content {
+    height: calc(100vh - 350px);
+}
+.edit .message {
+    height: 4em;
+}
