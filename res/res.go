@@ -12,3 +12,6 @@ var Edit string
 
 //go:embed main.css
 var CSS []byte
+
+//go:embed main.js
+var JS []byte

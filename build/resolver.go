@@ -61,6 +61,9 @@ func (r *Resolver) Links() map[string][]string {
 }
 
 func (r *Resolver) ResolveWikilink(node *wikilink.Node) ([]byte, error) {
+	if node.Embed {
+		return node.Target, nil
+	}
 	target := strings.ReplaceAll(strings.ToLower(string(node.Target)), " ", "_")
 	exists, err := r.PageExists(string(target))
 	if err != nil {

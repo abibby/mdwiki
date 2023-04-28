@@ -11,6 +11,13 @@ body {
 .content a[href^="/edit"] {
     color: red;
 }
+
+.content img {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+}
+
 h2 {
     border-bottom: solid 1px rgb(var(--light));
 }

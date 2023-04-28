@@ -11,6 +11,7 @@ import (
 func (b *Builder) copyStaticFiles() error {
 	files := map[string][]byte{
 		"dist/main.css": res.CSS,
+		"dist/main.js":  res.JS,
 	}
 	for assetPath, data := range files {
 		err := os.WriteFile(path.Join(b.root, assetPath), data, 0644)

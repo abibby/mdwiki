@@ -1,15 +1,15 @@
 <form class="edit" action="/save" method="post">
-    <input type="hidden" name="file" value="{{ .File }}">
-    
-    <h2>{{ .Title }}</h2>
-    <textarea class="content" name="content" >{{ .Content }}</textarea>
+  <input type="hidden" name="file" value="{{ .File }}" />
 
-    <h3>Edit Message</h3>
-    <textarea class="message" name="message">Update {{ .Title }}</textarea>
+  <h2>{{ .Title }}</h2>
+  <textarea class="content" name="content">{{ .Content }}</textarea>
 
-    <button type="submit">Save</button>
+  <h3>Edit Message</h3>
+  <textarea class="message" name="message">Update {{ .Title }}</textarea>
+
+  <button type="submit">Save</button>
 </form>
 <form class="delete" action="/delete" method="post">
-    <input type="hidden" name="file" value="{{ .File }}">
-    <button type="submit">Delete</button>
+  <input type="hidden" name="file" value="{{ .File }}" />
+  <button type="submit">Delete</button>
 </form>
