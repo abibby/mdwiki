@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -32,6 +33,7 @@ func Serve(root string, port int) error {
 	s.Handle("/images/", http.FileServer(http.Dir(root)))
 	s.Handle("/", http.FileServer(http.Dir(path.Join(root, "dist"))))
 
+	log.Printf("Listening on http://localhost:%d", port)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), s)
 }
 
