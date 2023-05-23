@@ -25,6 +25,7 @@ func New(root string) (*Builder, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	r := NewResolver(root)
 	return &Builder{
 		root: root,

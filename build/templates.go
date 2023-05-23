@@ -70,6 +70,12 @@ func addSubTemplates(t *template.Template, templates map[string]string) (*templa
 	return t, nil
 }
 
+type FuncArgs []any
+
+func (f FuncArgs) Arg(i int) any {
+	return f[i]
+}
+
 func addFuncs(t *template.Template, dir string) (*template.Template, error) {
 	root := path.Join(dir, "functions")
 	files, err := os.ReadDir(root)
@@ -78,16 +84,26 @@ func addFuncs(t *template.Template, dir string) (*template.Template, error) {
 	} else if err != nil {
 		return nil, err
 	}
+	filePaths := make([]string, len(files))
+	for i, f := range files {
+		filePaths[i] = path.Join(root, f.Name())
+	}
+
+	funcTemplates, err := template.ParseFiles(filePaths...)
+	if err != nil {
+		return nil, err
+	}
 
 	funcs := template.FuncMap{}
 
-	for _, f := range files {
-		b, err := os.ReadFile(path.Join(root, f.Name()))
-		if err != nil {
-			return nil, err
-		}
-		funcs[util.PathWithoutExt(f.Name())] = func(args ...any) template.HTML {
-			return template.HTML(fmt.Sprintf(string(b), args...))
+	for _, t := range funcTemplates.Templates() {
+		funcs[util.PathWithoutExt(t.Name())] = func(args ...any) template.HTML {
+			buff := &bytes.Buffer{}
+			err := t.Execute(buff, FuncArgs(args))
+			if err != nil {
+				return template.HTML("```\n" + err.Error() + "\n```\n")
+			}
+			return template.HTML(buff.Bytes())
 		}
 	}
 

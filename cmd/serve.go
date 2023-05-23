@@ -14,6 +14,7 @@ var serveCmd = &cobra.Command{
 	Aliases: []string{"s"},
 	Short:   "",
 	Long:    ``,
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return serve.Serve(args[0], 8765)
 	},
