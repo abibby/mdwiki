@@ -73,6 +73,9 @@ func addSubTemplates(t *template.Template, templates map[string]string) (*templa
 type FuncArgs []any
 
 func (f FuncArgs) Arg(i int) any {
+	if i >= len(f) {
+		return template.HTML(fmt.Sprintf("<pre>(argument %d not provided)</pre>", i))
+	}
 	return f[i]
 }
 
@@ -95,13 +98,12 @@ func addFuncs(t *template.Template, dir string) (*template.Template, error) {
 	}
 
 	funcs := template.FuncMap{}
-
 	for _, t := range funcTemplates.Templates() {
 		funcs[util.PathWithoutExt(t.Name())] = func(args ...any) template.HTML {
 			buff := &bytes.Buffer{}
 			err := t.Execute(buff, FuncArgs(args))
 			if err != nil {
-				return template.HTML("```\n" + err.Error() + "\n```\n")
+				return template.HTML("\n<pre>" + err.Error() + "</pre>\n")
 			}
 			return template.HTML(buff.Bytes())
 		}
